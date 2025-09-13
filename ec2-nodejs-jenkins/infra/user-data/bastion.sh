@@ -1,23 +1,18 @@
-# Update infra/user-data/bastion.sh
 #!/bin/bash
-sudo yum update -y
+# ==============================
+# Simple Bastion Setup Script (Ubuntu 22.04)
+# ==============================
 
-# Install required packages
-sudo yum install -y git curl wget
+# Update system
+apt update -y
+apt upgrade -y
 
-# Install AWS CLI v2
+# Install basic utilities
+apt install -y curl wget git
+
+# Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
-sudo ./aws/install
+./aws/install
 
-# Install jq
-sudo yum install -y jq
-
-# Install nginx
-sudo yum install -y nginx
-
-# Create .ssh directory
-mkdir -p /home/ec2-user/.ssh
-chown ec2-user:ec2-user /home/ec2-user/.ssh
-chmod 700 /home/ec2-user/.ssh
-
+echo "Bastion setup completed!"

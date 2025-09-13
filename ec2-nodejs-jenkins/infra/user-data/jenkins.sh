@@ -1,47 +1,105 @@
 #!/bin/bash
-# ==============================
-# EC2 User Data Script for Jenkins + Docker
-# ==============================
+
+exec > >(tee /var/log/user-data.log) 2>&1
+set -e  # Exit on any error
+set -x  # Debug mode
+
+echo "Starting Jenkins setup at $(date)"
 
 # Update system
-yum update -y
+apt update -y
+apt upgrade -y
 
-# ------------------------------
-# Install Java JDK 11 (required for Jenkins)
-# ------------------------------
-amazon-linux-extras enable corretto11
-yum install -y java-11-amazon-corretto
+# Install basic utilities
+apt install -y curl wget git unzip software-properties-common
 
-# Verify Java
+# Install OpenJDK 17
+apt install -y openjdk-17-jdk
+
+# Verify Java installation
 java -version
+which java
 
-# ------------------------------
+# Set JAVA_HOME
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> /etc/environment
+echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /etc/environment
+
 # Install Jenkins
-# ------------------------------
-wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
-rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-yum install -y jenkins
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | apt-key add -
+echo "deb https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list
+apt update -y
+apt install -y jenkins
 
-# ------------------------------
-# Install and Configure Docker
-# ------------------------------
-yum install -y docker
-systemctl enable docker
-systemctl start docker
+# Configure Jenkins
+tee /etc/default/jenkins << 'EOF'
+# defaults for Jenkins automation server
+NAME=jenkins
 
-# Add users to docker group
-usermod -aG docker ec2-user
-usermod -aG docker jenkins
+# arguments to pass to java
+JAVA_ARGS="-Djava.awt.headless=true -Xmx2g -Xms1g"
 
-# ------------------------------
-# Enable and Start Jenkins
-# ------------------------------
+PIDFILE=/var/run/$NAME/$NAME.pid
+
+# user and group to be invoked as (default to jenkins)
+JENKINS_USER=$NAME
+JENKINS_GROUP=$NAME
+
+# location of the jenkins war file
+JENKINS_WAR=/usr/share/java/$NAME.war
+
+# jenkins home location
+JENKINS_HOME=/var/lib/$NAME
+
+# set this to false if you don't want Jenkins to run by itself
+RUN_STANDALONE=true
+
+# log location
+JENKINS_LOG=/var/log/$NAME/$NAME.log
+
+# Whether to enable web access logging or not
+JENKINS_ENABLE_ACCESS_LOG="no"
+
+# OS LIMITS SETUP
+MAXOPENFILES=8192
+
+# port for HTTP connector (default 8080; disable with -1)
+HTTP_PORT=8080
+
+# servlet context, important if you want to use apache proxying
+PREFIX=/$NAME
+
+# arguments to pass to jenkins
+JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort=$HTTP_PORT"
+
+# Set JAVA_HOME for Jenkins
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+EOF
+
+# Start Jenkins
 systemctl enable jenkins
 systemctl start jenkins
 
-# ------------------------------
-# Expose Jenkins initial password
-# ------------------------------
-echo "Jenkins initial admin password:" >> /var/log/jenkins.setup.log
-cat /var/lib/jenkins/secrets/initialAdminPassword >> /var/log/jenkins.setup.log
-chmod 644 /var/log/jenkins.setup.log
+# Wait for Jenkins to start
+sleep 10
+
+# Check Jenkins status
+systemctl status jenkins
+
+# Install Docker
+apt install -y docker.io
+systemctl enable docker
+systemctl start docker
+usermod -aG docker ubuntu
+
+# Get Jenkins initial password
+echo "Jenkins setup completed!"
+echo "Initial password:"
+cat /var/lib/jenkins/secrets/initialAdminPassword
+
+# Get public IP
+PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+echo "Jenkins URL: http://${PUBLIC_IP}:8080"
+
+echo "Jenkins setup completed successfully at $(date)"

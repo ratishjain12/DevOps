@@ -1,24 +1,11 @@
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
 
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
+# Keep the existing key pair
 resource "aws_key_pair" "main" {
   key_name   = "main-key"
   public_key = file("${path.module}/keys/id_rsa.pub") 
 }
 
-
+# Keep existing ALB configuration
 resource "aws_lb" "app_alb" {
   name               = "app-alb"
   internal           = false
@@ -73,14 +60,16 @@ resource "aws_lb_listener" "app_listener" {
   }
 }
 
+# Updated instances with Ubuntu
 resource "aws_instance" "bastion" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type # Smallest instance
-  key_name              = aws_key_pair.main.key_name
+  ami                         = "ami-02d26659fd82cf299"
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.main.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
-  subnet_id             = module.vpc.public_subnets[0]
-  user_data = file("${path.module}/user-data/bastion.sh")
+  vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
+  subnet_id                   = module.vpc.public_subnets[0]
+  user_data                   = file("${path.module}/user-data/bastion.sh")
+
 
   tags = {
     Name = "bastion-server"
@@ -88,27 +77,27 @@ resource "aws_instance" "bastion" {
 }
 
 resource "aws_instance" "jenkins_server" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type
-  key_name              = aws_key_pair.main.key_name
+  ami                         = "ami-02d26659fd82cf299"
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.main.key_name
   associate_public_ip_address = true
-  subnet_id             = module.vpc.public_subnets[0]
-  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  user_data             = file("${path.module}/user-data/jenkins.sh")
-  
+  subnet_id                   = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [aws_security_group.jenkins_sg.id]
+  user_data                   = file("${path.module}/user-data/jenkins.sh")
+
   tags = {
     Name = "jenkins-server"
   }
 }
 
 resource "aws_instance" "app_server" {
-  ami                    = data.aws_ami.amazon_linux.id
+  ami                    = "ami-02d26659fd82cf299"
   instance_type          = var.instance_type
   key_name              = aws_key_pair.main.key_name
   subnet_id             = module.vpc.private_subnets[0]
   vpc_security_group_ids = [aws_security_group.app_sg.id]
   user_data             = file("${path.module}/user-data/app.sh")
-  
+
   tags = {
     Name = "app-server"
   }
