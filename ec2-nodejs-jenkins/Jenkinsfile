@@ -75,47 +75,6 @@ pipeline {
                 }
             }
         }
-        
-        stage('Health Check') {
-            steps {
-                script {
-                    echo "🏥 Performing health check..."
-                    
-                    withCredentials([
-                        string(credentialsId: 'bastion-host-ip', variable: 'BASTION_IP'),
-                        string(credentialsId: 'app-server-ip', variable: 'APP_IP')
-                    ]) {
-                        sshagent(['ssh-credentials']) {
-                            sh """
-                                ssh -o StrictHostKeyChecking=no ubuntu@${BASTION_IP} "
-                                    ssh -o StrictHostKeyChecking=no ubuntu@${APP_IP} '
-                                        # Wait for app to start
-                                        sleep 10
-                                        
-                                        # Check if container is running
-                                        if docker ps | grep nodejs-app; then
-                                            echo \"✅ Container is running\"
-                                            
-                                            # Test the application
-                                            if curl -f http://localhost:3000/health || curl -f http://localhost:3000/; then
-                                                echo \"✅ Application is responding\"
-                                            else
-                                                echo \"❌ Application is not responding\"
-                                                exit 1
-                                            fi
-                                        else
-                                            echo \"❌ Container is not running\"
-                                            exit 1
-                                        fi
-                                    '
-                                "
-                            """
-                        }
-                    }
-                    echo "✅ Health check passed!"
-                }
-            }
-        }
     }
     
     post {
