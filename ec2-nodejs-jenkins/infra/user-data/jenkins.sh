@@ -93,7 +93,8 @@ systemctl status jenkins
 apt install -y docker.io
 systemctl enable docker
 systemctl start docker
-usermod -aG docker ubuntu
+sudo usermod -aG docker ubuntu
+sudo usermod -aG docker jenkins
 
 # Get Jenkins initial password
 echo "Jenkins setup completed!"
