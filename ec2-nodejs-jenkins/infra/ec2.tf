@@ -78,7 +78,7 @@ resource "aws_instance" "bastion" {
 
 resource "aws_instance" "jenkins_server" {
   ami                         = "ami-02d26659fd82cf299"
-  instance_type               = var.instance_type
+  instance_type               = var.jenkins_instance_type
   key_name                    = aws_key_pair.main.key_name
   associate_public_ip_address = true
   subnet_id                   = module.vpc.public_subnets[0]
