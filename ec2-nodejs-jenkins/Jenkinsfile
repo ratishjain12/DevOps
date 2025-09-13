@@ -119,8 +119,10 @@ pipeline {
             echo "❌ Pipeline failed!"
         }
         always {
-            echo "🧹 Cleaning up workspace..."
-            sh "docker system prune -f || true"
+            script {
+                echo "🧹 Cleaning up workspace..."
+                sh "docker system prune -f || true"
+            }
         }
     }
 }
