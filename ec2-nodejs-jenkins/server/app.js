@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Welcome to EC2 Node.js",
+    message: "Welcome to EC2 Node.js server",
     status: "running",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
