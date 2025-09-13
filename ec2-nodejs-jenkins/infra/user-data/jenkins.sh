@@ -1,34 +1,47 @@
 #!/bin/bash
+# ==============================
+# EC2 User Data Script for Jenkins + Docker
+# ==============================
 
 # Update system
-sudo yum update -y
+yum update -y
 
+# ------------------------------
 # Install Java JDK 11 (required for Jenkins)
-sudo yum install -y java-11-openjdk-devel
+# ------------------------------
+amazon-linux-extras enable corretto11
+yum install -y java-11-amazon-corretto
 
-# Set JAVA_HOME environment variable
-echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk' >> /home/ec2-user/.bashrc
-echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /home/ec2-user/.bashrc
+# Verify Java
+java -version
 
-# Install Jenkins repository
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-
+# ------------------------------
 # Install Jenkins
-sudo yum install -y jenkins
+# ------------------------------
+wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+yum install -y jenkins
 
-# Start and enable Jenkins
-sudo systemctl start jenkins
-sudo systemctl enable jenkins
+# ------------------------------
+# Install and Configure Docker
+# ------------------------------
+yum install -y docker
+systemctl enable docker
+systemctl start docker
 
-# Add jenkins user to docker group
-sudo usermod -a -G docker jenkins
+# Add users to docker group
+usermod -aG docker ec2-user
+usermod -aG docker jenkins
 
-# Install Docker
-sudo yum install -y docker
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -a -G docker ec2-user
+# ------------------------------
+# Enable and Start Jenkins
+# ------------------------------
+systemctl enable jenkins
+systemctl start jenkins
 
-# Get Jenkins initial admin password
-JENKINS_PASSWORD=$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)
+# ------------------------------
+# Expose Jenkins initial password
+# ------------------------------
+echo "Jenkins initial admin password:" >> /var/log/jenkins.setup.log
+cat /var/lib/jenkins/secrets/initialAdminPassword >> /var/log/jenkins.setup.log
+chmod 644 /var/log/jenkins.setup.log
