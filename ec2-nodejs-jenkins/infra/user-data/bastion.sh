@@ -3,6 +3,7 @@
 # Simple Bastion Setup Script (Ubuntu 22.04)
 # ==============================
 
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
 # Update system
 apt update -y
 apt upgrade -y

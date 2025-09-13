@@ -6,6 +6,8 @@ set -x  # Debug mode
 
 echo "Starting Jenkins setup at $(date)"
 
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+
 # Update system
 apt update -y
 apt upgrade -y
