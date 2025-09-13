@@ -85,7 +85,7 @@ pipeline {
                         string(credentialsId: 'bastion-host-ip', variable: 'BASTION_IP'),
                         string(credentialsId: 'app-server-ip', variable: 'APP_IP')
                     ]) {
-                        sshAgent(['ssh-credentials']) {
+                        sshagent(['ssh-credentials']) {
                             sh """
                                 ssh -o StrictHostKeyChecking=no ubuntu@${BASTION_IP} "
                                     ssh -o StrictHostKeyChecking=no ubuntu@${APP_IP} '
