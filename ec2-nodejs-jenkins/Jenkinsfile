@@ -1,0 +1,126 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_HUB_CREDENTIALS = 'docker-hub-credentials'
+        SSH_CREDENTIALS = 'ssh-credentials'
+        BASTION_HOST_IP = credentials('bastion-host-ip')
+        APP_SERVER_IP = credentials('app-server-ip')
+        DOCKER_IMAGE = 'ratishjain/nodejs-app'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "✅ Code checked out successfully"
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "🐳 Building Docker image..."
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ./server"
+                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    echo "✅ Docker image built: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    echo "📤 Pushing to Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                        sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
+                    echo "✅ Image pushed to Docker Hub"
+                }
+            }
+        }
+        
+        stage('Deploy to App Server') {
+            steps {
+                script {
+                    echo "🚀 Deploying to App Server..."
+                    
+                    sshAgent(['ssh-credentials']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ubuntu@${BASTION_HOST_IP} "
+                                ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} '
+                                    # Stop existing container
+                                    docker stop nodejs-app || true
+                                    docker rm nodejs-app || true
+                                    
+                                    # Pull latest image
+                                    docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                    
+                                    # Run new container
+                                    docker run -d --name nodejs-app -p 3000:3000 ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                    
+                                    # Clean up old images
+                                    docker image prune -f
+                                    
+                                    echo \"✅ App deployed successfully!\"
+                                '
+                            "
+                        """
+                    }
+                    echo "✅ Deployment completed!"
+                }
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    echo "🏥 Performing health check..."
+                    sshAgent(['ssh-credentials']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ubuntu@${BASTION_HOST_IP} "
+                                ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER_IP} '
+                                    # Wait for app to start
+                                    sleep 10
+                                    
+                                    # Check if container is running
+                                    if docker ps | grep nodejs-app; then
+                                        echo \"✅ Container is running\"
+                                        
+                                        # Test the application
+                                        if curl -f http://localhost:3000/health || curl -f http://localhost:3000/; then
+                                            echo \"✅ Application is responding\"
+                                        else
+                                            echo \"❌ Application is not responding\"
+                                            exit 1
+                                        fi
+                                    else
+                                        echo \"❌ Container is not running\"
+                                        exit 1
+                                    fi
+                                '
+                            "
+                        """
+                    }
+                    echo "✅ Health check passed!"
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "🎉 Pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed!"
+        }
+        always {
+            echo "🧹 Cleaning up workspace..."
+            sh "docker system prune -f || true"
+        }
+    }
+}
