@@ -47,7 +47,7 @@ jobs:
 
             # Stop existing containers
             echo "🛑 Stopping existing containers..."
-            docker compose down
+            sudo docker compose down
 
             # Start the ELK stack
             echo "🚀 Starting ELK stack..."
