@@ -27,20 +27,19 @@ jobs:
               echo "�� Pulling latest changes..."
               cd DevOps
               
-              git clean -fd
-              git reset --hard HEAD
+              git fetch origin
+              git reset --hard origin/main
               
               # Pull latest changes
               git pull origin main
-              
-              cd ..
+
             else
               echo "📥 Cloning repository..."
               git clone https://github.com/ratishjain12/DevOps.git
             fi
 
             # Navigate to server directory
-            cd DevOps/nodejs-elk-ec2/server
+            cd nodejs-elk-ec2/server
 
             # Create logs directory
             mkdir -p logs
