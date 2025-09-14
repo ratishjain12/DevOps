@@ -5,7 +5,7 @@ variable "region" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.small"
+  default = "t3.medium"
 }
 
 variable "node_app_port" {
