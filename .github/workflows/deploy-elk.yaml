@@ -32,7 +32,7 @@ jobs:
             fi
 
             # Navigate to server directory
-            cd server
+            cd DevOps/nodejs-elk-ec2/server
 
             # Create logs directory
             mkdir -p logs
