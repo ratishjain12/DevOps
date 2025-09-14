@@ -1,0 +1,36 @@
+{
+  "name": "nodejs-elk-app",
+  "version": "1.0.0",
+  "description": "Node.js Express app with ELK logging stack using Pino",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "elk",
+    "logging",
+    "pino",
+    "elasticsearch"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "pino": "^8.17.0",
+    "pino-pretty": "^10.3.1",
+    "pino-http": "^7.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

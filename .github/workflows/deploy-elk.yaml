@@ -1,0 +1,54 @@
+name: Deploy ELK Stack
+
+on:
+  push:
+    branches: [main]
+    paths: ["nodejs-elk-ec2/**"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy ELK Stack to EC2
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.ELK_EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.ELK_EC2_SSH_KEY }}
+          script: |
+            echo "🚀 Deploying ELK Stack..."
+
+            cd /opt/nodejs-elk-app
+
+            # Clone or pull repository
+            if [ -d ".git" ]; then
+              echo "�� Pulling latest changes..."
+              git pull origin main
+            else
+              echo "📥 Cloning repository..."
+              git clone https://github.com/ratishjain/DevOps.git .
+            fi
+
+            # Navigate to server directory
+            cd server
+
+            # Create logs directory
+            mkdir -p logs
+
+            # Stop existing containers
+            echo "🛑 Stopping existing containers..."
+            docker-compose down
+
+            # Start the ELK stack
+            echo "🚀 Starting ELK stack..."
+            docker-compose up -d
+
+            # Wait for services to start
+            echo "⏳ Waiting for services to start..."
+            sleep 60
+
+            # Check service status
+            echo "📊 Checking service status..."
+            docker-compose ps

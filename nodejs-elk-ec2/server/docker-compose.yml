@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+  nodejs-app:
+    build: .
+    container_name: nodejs-elk-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    volumes:
+      - /opt/nodejs-elk-app/logs:/app/logs
+      - /opt/nodejs-elk-app:/app
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+    user: "1000:1000" # Run as non-root user
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - /opt/nodejs-elk-app/elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elk
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 2g
+    memswap_limit: 2g
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash
+    restart: unless-stopped
+    ports:
+      - "5044:5044"
+    volumes:
+      - /opt/nodejs-elk-app/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - /opt/nodejs-elk-app/elk/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    environment:
+      - LS_JAVA_OPTS=-Xms512m -Xmx512m
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+    mem_limit: 1g
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+    mem_limit: 1g
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: filebeat
+    restart: unless-stopped
+    user: root
+    volumes:
+      - /opt/nodejs-elk-app/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /opt/nodejs-elk-app/logs:/var/log/app:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - logstash
+    networks:
+      - elk
+    mem_limit: 512m
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  elk:
+    driver: bridge
