@@ -28,7 +28,7 @@ jobs:
               git pull origin main
             else
               echo "📥 Cloning repository..."
-              git clone https://github.com/ratishjain12/DevOps.git .
+              git clone https://github.com/ratishjain12/DevOps.git
             fi
 
             # Navigate to server directory
