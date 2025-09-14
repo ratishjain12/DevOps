@@ -26,7 +26,13 @@ jobs:
             if [ -d "DevOps" ]; then
               echo "�� Pulling latest changes..."
               cd DevOps
+              
+              git clean -fd
+              git reset --hard HEAD
+              
+              # Pull latest changes
               git pull origin main
+              
               cd ..
             else
               echo "📥 Cloning repository..."
