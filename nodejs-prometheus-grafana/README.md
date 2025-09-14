@@ -174,7 +174,6 @@ helm repo update
 
 ```bash
 helm install prometheus prometheus-community/prometheus \
-  --version 27.37.0 \
   --namespace monitoring \
   --set server.service.type=NodePort \
   --set server.service.nodePort=30090 \
@@ -183,7 +182,9 @@ helm install prometheus prometheus-community/prometheus \
 
 ### 4.3 Configure Prometheus to Scrape Node.js App
 
-Create a ConfigMap for Prometheus configuration:
+use command kubectl edit configmap prometheus-server -n monitoring
+
+add job node-app
 
 ```yaml
 apiVersion: v1
@@ -198,43 +199,17 @@ data:
       evaluation_interval: 15s
 
     scrape_configs:
+    - job_name: 'node-app'
+      static_configs:
+      - targets: ['node-app-service.default.svc.cluster.local:3000']
     - job_name: 'prometheus'
       static_configs:
       - targets: ['localhost:9090']
-
-    - job_name: 'node-app'
-      kubernetes_sd_configs:
-      - role: endpoints
-        namespaces:
-          names:
-          - default
-      relabel_configs:
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
-        action: keep
-        regex: true
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
-        action: replace
-        target_label: __metrics_path__
-        regex: (.+)
-      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
-        action: replace
-        regex: ([^:]+)(?::\d+)?;(\d+)
-        replacement: $1:$2
-        target_label: __address__
-      - action: labelmap
-        regex: __meta_kubernetes_service_label_(.+)
-      - source_labels: [__meta_kubernetes_namespace]
-        action: replace
-        target_label: kubernetes_namespace
-      - source_labels: [__meta_kubernetes_service_name]
-        action: replace
-        target_label: kubernetes_name
 ```
 
-Apply the configuration:
+After editing configmap run
 
 ```bash
-kubectl apply -f prometheus-configmap.yaml
 kubectl rollout restart deployment/prometheus-server -n monitoring
 ```
 
