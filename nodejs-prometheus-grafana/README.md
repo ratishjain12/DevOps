@@ -4,6 +4,9 @@ This project demonstrates how to set up comprehensive monitoring for a Node.js a
 
 ## Architecture Overview
 
+<img width="1124" height="535" alt="image" src="https://github.com/user-attachments/assets/2755f627-73a9-4636-920e-66e7be659b00" />
+
+
 ## Prerequisites
 
 - Docker installed and running
