@@ -39,11 +39,11 @@ jobs:
 
             # Stop existing containers
             echo "🛑 Stopping existing containers..."
-            docker-compose down
+            docker compose down
 
             # Start the ELK stack
             echo "🚀 Starting ELK stack..."
-            docker-compose up -d
+            sudo docker compose up -d
 
             # Wait for services to start
             echo "⏳ Waiting for services to start..."
@@ -51,4 +51,4 @@ jobs:
 
             # Check service status
             echo "📊 Checking service status..."
-            docker-compose ps
+            sudo docker compose ps
