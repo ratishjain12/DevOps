@@ -45,6 +45,11 @@ jobs:
             # Create logs directory
             mkdir -p logs
 
+            sudo chown root:root elk/filebeat/filebeat.yml
+            sudo chmod 600 elk/filebeat/filebeat.yml
+            sudo chmod go-w elk elk/filebeat
+            sudo chown -R 1000:1000 logs
+
             # Stop existing containers
             echo "🛑 Stopping existing containers..."
             sudo docker compose down
