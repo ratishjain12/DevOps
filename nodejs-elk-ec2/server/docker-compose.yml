@@ -12,7 +12,6 @@ services:
       - LOG_LEVEL=info
     volumes:
       - ./logs:/app/logs
-      - .:/app
     depends_on:
       - elasticsearch
     networks:
