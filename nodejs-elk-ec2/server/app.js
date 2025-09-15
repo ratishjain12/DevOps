@@ -8,32 +8,36 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const dest = pino.destination("/app/logs/app.log");
 // Configure Pino logger
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  formatters: {
-    level: (label) => {
-      return { level: label };
+const logger = pino(
+  {
+    level: process.env.LOG_LEVEL || "info",
+    formatters: {
+      level: (label) => {
+        return { level: label };
+      },
     },
+    timestamp: pino.stdTimeFunctions.isoTime,
+    base: {
+      service: "nodejs-elk-app",
+      version: "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+    },
+    transport:
+      process.env.NODE_ENV === "development"
+        ? {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              translateTime: "SYS:standard",
+              ignore: "pid,hostname",
+            },
+          }
+        : undefined,
   },
-  timestamp: pino.stdTimeFunctions.isoTime,
-  base: {
-    service: "nodejs-elk-app",
-    version: "1.0.0",
-    environment: process.env.NODE_ENV || "development",
-  },
-  transport:
-    process.env.NODE_ENV === "development"
-      ? {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-            translateTime: "SYS:standard",
-            ignore: "pid,hostname",
-          },
-        }
-      : undefined,
-});
+  dest
+);
 
 // Create HTTP logger middleware
 const httpLogger = pinoHttp({
