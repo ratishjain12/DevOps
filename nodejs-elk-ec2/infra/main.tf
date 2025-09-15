@@ -94,6 +94,23 @@ resource "aws_key_pair" "main" {
   public_key = file("${path.module}/keys/id_rsa.pub")
 }
 
+resource "aws_ebs_volume" "volume" {
+  availability_zone = module.vpc.azs[0]
+  size = var.volume_size
+  type = "gp3"
+
+  tags = {
+    Name        = "data"
+    Environment = "production"
+    Project     = "nodejs-elk-logging-stack"
+  }
+}
+
+resource "aws_volume_attachment" "volume_attachment" {
+  device_name = "/dev/sdf"
+  volume_id = aws_ebs_volume.volume.id
+  instance_id = aws_instance.app_server.id
+}
 
 resource "aws_instance" "app_server" {
   ami = "ami-02d26659fd82cf299"

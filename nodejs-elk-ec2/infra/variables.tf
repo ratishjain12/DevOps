@@ -3,6 +3,12 @@ variable "region" {
   default = "ap-south-1"
 }
 
+variable "volume_size" {
+  type        = number
+  default     = 30
+  description = "Size of the EBS volume for Elasticsearch data in GB"
+}
+
 variable "instance_type" {
   type    = string
   default = "t3.large"

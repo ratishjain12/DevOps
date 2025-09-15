@@ -2,6 +2,7 @@
 
 set -e
 export DEBIAN_FRONTEND=noninteractive
+
 # Add Docker's official GPG key:
 sudo apt-get update -y
 sudo apt-get install ca-certificates curl
@@ -24,5 +25,30 @@ sudo systemctl enable docker
 sudo systemctl start docker
 usermod -aG docker ubuntu
 
+# Wait for EBS volume to be attached (t3.large uses NVMe)
+sleep 30
+
+# Format and mount the EBS volume for Elasticsearch
+# For t3.large (Nitro-based), the device will be /dev/nvme1n1
+if [ -b /dev/nvme1n1 ]; then
+  echo "Formatting EBS volume..."
+  sudo mkfs.ext4 /dev/nvme1n1
+  
+  echo "Creating mount point..."
+  sudo mkdir -p /opt/elasticsearch-data
+  
+  echo "Mounting EBS volume..."
+  sudo mount /dev/nvme1n1 /opt/elasticsearch-data
+  
+  echo "Adding to fstab for persistent mounting..."
+  echo '/dev/nvme1n1 /opt/elasticsearch-data ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
+  
+  echo "Setting permissions..."
+  sudo chown -R ubuntu:ubuntu /opt/elasticsearch-data
+else
+  echo "EBS volume not found at /dev/nvme1n1"
+fi
+
+# Create application directory
 mkdir -p /opt/nodejs-elk-app
 chown -R ubuntu:ubuntu /opt/nodejs-elk-app
